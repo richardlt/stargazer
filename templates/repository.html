@@ -1,0 +1,200 @@
+{{define "repository"}}
+<html>
+
+<head>
+    <title>Stargazer | {{.entry.Repository}}</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.bundle.min.js"
+        integrity="sha256-TQq84xX6vkwR0Qs1qH5ADkP+MvH0W+9E7TdHJsoIQiM=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.css"
+        integrity="sha256-aa0xaJgmK/X74WM224KMQeNQC2xYKwlAt08oZqjeF0E=" crossorigin="anonymous" />
+    <style>
+        body {
+            margin-left: 80px;
+            margin-right: 80px;
+            display: flex;
+            flex-direction: column;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 3em;
+            margin-top: 75px;
+        }
+
+        .title-extra {
+            text-align: center;
+            font-size: 2em;
+            margin-bottom: 50px;
+        }
+
+        .content {
+            text-align: center;
+            font-size: 1.1em;
+            margin-top: 25px;
+            margin-bottom: 50px;
+        }
+
+        .graph {
+            width: 100%;
+            max-width: 1000px;
+            margin: 50px;
+        }
+
+        .align {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .list {
+            margin-top: 50px;
+            margin-bottom: 50px;
+            text-align: center;
+        }
+
+        a {
+            text-decoration: none;
+            color: rgba(54, 162, 235, 1);
+        }
+
+        .info {
+            text-align: center;
+            font-size: .7em;
+            color: grey;
+            margin-top: 100px;
+            margin-bottom: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="title">
+        <a href="https://github.com/{{.entry.Repository}}" target="_blank"
+            rel="noopener noreferrer">{{.entry.Repository}}</a>
+    </div>
+    {{if .entry.Stats.CountStars}}<div class="title-extra">⭐ {{.entry.Stats.CountStars}}</div>{{end}}
+    {{if eq .entry.Status "requested"}}
+    <p class="content">
+        Stats are computing, this page will be refreshed in a few minutes!
+        {{if .entry.Stats.CountStars}}
+        <br /> Following data may be out of date.
+        {{else}}
+        <br /> Make sure you starred the repository <a href="https://github.com/{{.main_repository}}" target="_blank"
+            rel="noopener noreferrer">{{.main_repository}}</a> to enable stats computing for your repositories.
+        {{end}}
+    </p>
+    <script>setTimeout(function () { document.location.reload(false); }, 10000);</script>
+    {{end}}
+    {{if .entry.Stats.CountStars}}
+    <div class="align">
+        <div class="graph">
+            <canvas id="allStars"></canvas>
+        </div>
+    </div>
+    <div class="align">
+        <div class="graph">
+            <canvas id="starPerDay"></canvas>
+        </div>
+    </div>
+    <div class="list">
+        <h2>Last stargazers</h2>
+        <ul>
+            {{range $index, $element := .entry.Stats.Last10}}
+            <li><a href="https://github.com/{{$element.Name}}" target="_blank"
+                    rel="noopener noreferrer">{{$element.Name}}</a></li>
+            {{end}}
+        </ul>
+    </div>
+    <p class="info">
+        Stats generated at: {{.last_generated_at_string}}.<br />
+        <br />
+        Opening this page will automatically triggers the stats computing for the target repository. Stats are computed
+        only one time each {{.regenerate_delay_human}}.
+        <br />
+        Due to Github API limitations, data for repositories with more than 40k stars will be partially computed.
+        <br />
+        You don't want to see your stats here? Fill an issue in <a
+            href="https://github.com/{{.main_repository}}/issues/new" target="_blank"
+            rel="noopener noreferrer">{{.main_repository}}</a>.
+    </p>
+    <script>
+        window.onload = function () {
+            var stats = JSON.parse("{{.stats_json}}");
+            var evolutionLabels = [];
+            var evolutionData = [];
+            for (var i = 0; i < stats.evolution.length; i++) {
+                evolutionLabels.push(stats.evolution[i].date);
+                evolutionData.push(stats.evolution[i].count);
+            }
+            var perDaysLabels = [];
+            var perDaysData = [];
+            for (var i = 0; i < stats.per_days.length; i++) {
+                perDaysLabels.push(stats.per_days[i].date);
+                perDaysData.push(stats.per_days[i].count);
+            }
+
+            new Chart(document.getElementById('allStars').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: evolutionLabels,
+                    datasets: [{
+                        label: 'Stars evolution',
+                        backgroundColor: '#224B8B',
+                        borderColor: '#3BABFD',
+                        data: evolutionData,
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    title: { display: false, text: '' },
+                    tooltips: { mode: 'index', intersect: false },
+                    hover: { mode: 'nearest', intersect: true },
+                    scales: {
+                        xAxes: [{ type: 'time', time: { unit: 'day' }, display: true, scaleLabel: { display: true, labelString: 'Date' } }],
+                        yAxes: [{ display: true, scaleLabel: { display: true, labelString: 'Count' } }]
+                    }
+                }
+            });
+
+            new Chart(document.getElementById('starPerDay').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: perDaysLabels,
+                    datasets: [{
+                        label: 'Stars per days',
+                        backgroundColor: '#009C41',
+                        borderColor: '#1DBC60',
+                        data: perDaysData,
+                        borderWidth: 1,
+                        lineTension: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    title: { display: false, text: '' },
+                    tooltips: { mode: 'index', intersect: false },
+                    hover: { mode: 'nearest', intersect: true },
+                    scales: {
+                        xAxes: [{ type: 'time', time: { unit: 'day' }, display: true, scaleLabel: { display: true, labelString: 'Date' } }],
+                        yAxes: [{ display: true, scaleLabel: { display: true, labelString: 'Count' } }]
+                    }
+                }
+            });
+        };
+    </script>
+    {{end}}
+</body>
+
+</html>
+{{end}}

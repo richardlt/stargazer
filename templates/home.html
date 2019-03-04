@@ -1,0 +1,67 @@
+{{define "home"}}
+<html>
+
+<head>
+    <title>Stargazer | Home</title>
+    <style>
+        body {
+            padding-left: 100px;
+            padding-right: 100px;
+            display: flex;
+            flex-direction: column;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+
+        .title {
+            text-align: center;
+            font-size: 50px;
+            margin-top: 75px;
+            margin-bottom: 50px;
+        }
+
+        .content {
+            text-align: center;
+            font-size: 15px;
+            margin-top: 75px;
+            margin-bottom: 50px;
+        }
+
+        input {
+            font-size: 20px;
+        }
+
+        input[type=text] {
+            width: 500px;
+            height: 50px;
+            padding: 20px;
+        }
+
+        input[type=submit] {
+            height: 50px;
+            padding: 0px 25px;
+            background-color: #1DBC60;
+            color: #FFFFFF;
+            border: 2px solid #009C41;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="title">Stargazer</div>
+    <div class="content">
+        <form id="compute-form">
+            <input type="text" id="path" placeholder="richardlt/stargazer">
+            <input type="submit" value="Compute" />
+        </form>
+    </div>
+    <script>
+        document.getElementById("compute-form").addEventListener("submit", function (e) {
+            e.preventDefault();
+            window.location.href = './' + document.getElementById('path').value;
+        });
+    </script>
+</body>
+
+</html>
+{{end}}
