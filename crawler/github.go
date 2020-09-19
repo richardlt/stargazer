@@ -108,6 +108,20 @@ func (c *githubClient) getRepository(path string) (object, error) {
 	return o, nil
 }
 
+func (c *githubClient) getRepositoryConributors(path string) ([]object, error) {
+	buf, err := c.get(fmt.Sprintf("%s/repos/%s/contributors", ghBaseURL, path))
+	if err != nil {
+		return nil, err
+	}
+
+	var os []object
+	if err := json.Unmarshal(buf, &os); err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return os, nil
+}
+
 func (c *githubClient) getRepositoryStargazer(path string) ([]object, error) {
 	os, err := c.getPaginate(
 		fmt.Sprintf("%s/repos/%s/stargazers", ghBaseURL, path),

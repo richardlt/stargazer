@@ -170,8 +170,8 @@ func execTaskRepositoryRoutine(pgClient *database.DB, mgoClient *databaseClient,
 		owner := rs[0]
 
 		// Check that the repository owner starred the main repository
-		// For organization repository, check that one stargazer of the main repository is in the organization
-		exists, err := mgoClient.existsRepositoryStargazer(mainRepo, owner)
+		// For organization repository, first check that one stargazer of the main repository is in the organization
+		exists, err := mgoClient.existsOneOfRepositoryStargazer(mainRepo, owner)
 		if err != nil {
 			return err
 		}
@@ -182,9 +182,8 @@ func execTaskRepositoryRoutine(pgClient *database.DB, mgoClient *databaseClient,
 			}
 			continue
 		}
-		logrus.Debugf("execTaskRepositoryRoutine: starting compute stats for repo for %s", e.Repository)
 
-		// Load stargazer for repo
+		// Load the repository from GH
 		o, err := ghClient.getRepository(e.Repository)
 		if err != nil {
 			logrus.Debugf("execTaskRepositoryRoutine: repository not found on GH %s", e.Repository)
@@ -193,6 +192,41 @@ func execTaskRepositoryRoutine(pgClient *database.DB, mgoClient *databaseClient,
 			}
 			continue
 		}
+		repoOwner := o["owner"].(map[string]interface{})
+		repoOwnerType := repoOwner["type"].(string)
+
+		if repoOwnerType == "Organization" {
+			logrus.Debugf("execTaskRepositoryRoutine: repository owner is an organization, checking contributors for %s", e.Repository)
+			contributors, err := ghClient.getRepositoryConributors(e.Repository)
+			if err != nil || len(contributors) == 0 {
+				logrus.Debugf("execTaskRepositoryRoutine: repository contributors not found on GH %s", e.Repository)
+				if err := pgClient.Delete(e.Repository); err != nil {
+					return err
+				}
+				continue
+			}
+			logins := make([]string, len(contributors))
+			for i := 0; i < 3; i++ {
+				logins[i] = contributors[i]["login"].(string)
+			}
+
+			// For organization repository we check that one of the top three contributors starred the main repository
+			exists, err := mgoClient.existsOneOfRepositoryStargazer(mainRepo, logins...)
+			if err != nil {
+				return err
+			}
+			if !exists {
+				logrus.Debugf("execTaskRepositoryRoutine: no contributors stargazer found on main repo for %s", e.Repository)
+				if err := pgClient.Delete(e.Repository); err != nil {
+					return err
+				}
+				continue
+			}
+		}
+
+		logrus.Debugf("execTaskRepositoryRoutine: starting compute stats for repo for %s", e.Repository)
+
+		// Load stargazer for repo
 		if err := loadStargazerForRepo(mgoClient, ghClient, o, maxStargazerPageToScan, mainRepoPath); err != nil {
 			return err
 		}

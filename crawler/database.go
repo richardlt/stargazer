@@ -208,7 +208,7 @@ func (c databaseClient) updateUser(u *user) error {
 	return errors.WithStack(err)
 }
 
-func (c databaseClient) existsRepositoryStargazer(repo, owner string) (bool, error) {
+func (c databaseClient) existsOneOfRepositoryStargazer(repo string, logins ...string) (bool, error) {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -238,10 +238,12 @@ func (c databaseClient) existsRepositoryStargazer(repo, owner string) (bool, err
 		{
 			"$match": bson.M{
 				"$or": []bson.M{
-					{"user.login": owner},
+					{"user.login": bson.M{"$in": logins}},
 					{
 						"user.organizations": bson.M{
-							"$elemMatch": bson.M{"login": owner},
+							"$elemMatch": bson.M{
+								"login": bson.M{"$in": logins},
+							},
 						},
 					},
 				},
