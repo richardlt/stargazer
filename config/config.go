@@ -16,22 +16,13 @@ type Crawler struct {
 	TaskRepositoryScanDelay         int64
 	TaskRepositoryMaxStargazerPages int64
 	TaskRepositoryExclusions        []string
-	Database                        Database
-}
-
-type Database struct {
-	Host     string
-	Port     int64
-	SSL      bool
-	Name     string
-	User     string
-	Password string
+	DatabaseURL                     string
 }
 
 type Web struct {
 	Common
 	Port            int64
-	Database        Database
+	DatabaseURL     string
 	RegenerateDelay int64
 	MainRepository  string
 	MaxEntriesCount int64

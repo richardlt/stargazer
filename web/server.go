@@ -22,11 +22,11 @@ type Server struct {
 	ts              *template.Template
 }
 
-func (s *Server) initRouter() error {
+func (s *Server) initRouter(templatePath string) error {
 	var err error
 	s.ts, err = template.New("stargazer").ParseFiles(
-		"./templates/home.html",
-		"./templates/repository.html",
+		templatePath+"templates/home.html",
+		templatePath+"templates/repository.html",
 	)
 	if err != nil {
 		return err

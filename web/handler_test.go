@@ -11,25 +11,21 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/richardlt/stargazer/config"
 	"github.com/richardlt/stargazer/database"
 )
 
 func newTestServer(t *testing.T) (*mux.Router, *database.DB) {
 	logrus.SetLevel(logrus.DebugLevel)
 
-	db, err := database.New(config.Database{
-		Host:     "localhost",
-		Port:     5432,
-		SSL:      false,
-		Name:     "stargazer",
-		User:     "stargazer",
-		Password: "stargazer",
-	})
+	db, err := database.New("postgres://stargazer:stargazer@localhost:5432/stargazer?sslmode=disable")
 	require.NoError(t, err)
 
-	s := &Server{db: db}
-	require.NoError(t, s.initRouter())
+	s := &Server{
+		db:              db,
+		maxEntriesCount: 100,
+		regenerateDelay: 3600 * 24,
+	}
+	require.NoError(t, s.initRouter("../"))
 
 	return s.router, s.db
 }

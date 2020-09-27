@@ -1,32 +1,17 @@
 package database
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/pkg/errors"
-
-	"github.com/richardlt/stargazer/config"
 )
 
-func New(cfg config.Database) (*DB, error) {
-	opts := []string{
-		"host=" + cfg.Host,
-		fmt.Sprintf("port=%d", cfg.Port),
-		"dbname=" + cfg.Name,
-		"user=" + cfg.User,
-		"password=" + cfg.Password,
-	}
-	if !cfg.SSL {
-		opts = append(opts, "sslmode=disable")
-	}
-
-	db, err := gorm.Open("postgres", strings.Join(opts, " "))
+func New(databaseURL string) (*DB, error) {
+	db, err := gorm.Open("postgres", databaseURL)
 	if err != nil {
-		return nil, errors.Wrapf(err, "can't connect to database at %s:%d", cfg.Host, cfg.Port)
+		return nil, errors.Wrap(err, "can't connect to database")
 	}
 
 	res := db.AutoMigrate(&Entry{})

@@ -17,39 +17,10 @@ func main() {
 
 	globalFlags := []cli.Flag{
 		&cli.StringFlag{
-			Name:    "pg-host",
-			Value:   "localhost",
-			Usage:   "Postgres database URI",
-			EnvVars: []string{"STARGAZER_PG_HOST"},
-		},
-		&cli.Int64Flag{
-			Name:    "pg-port",
-			Value:   5432,
-			Usage:   "Postgres database port",
-			EnvVars: []string{"STARGAZER_PG_PORT"},
-		},
-		&cli.BoolFlag{
-			Name:    "pg-disable-ssl",
-			Usage:   "Postgres database ssl mode",
-			EnvVars: []string{"STARGAZER_PG_DISABLE_SSL"},
-		},
-		&cli.StringFlag{
-			Name:    "pg-database",
-			Value:   "stargazer",
-			Usage:   "Postgres database name",
-			EnvVars: []string{"STARGAZER_PG_DATABASE"},
-		},
-		&cli.StringFlag{
-			Name:    "pg-user",
-			Value:   "stargazer",
-			Usage:   "Postgres database user",
-			EnvVars: []string{"STARGAZER_PG_USER"},
-		},
-		&cli.StringFlag{
-			Name:    "pg-password",
-			Value:   "stargazer",
-			Usage:   "Postgres database password",
-			EnvVars: []string{"STARGAZER_PG_PASSWORD"},
+			Name:    "pg-url",
+			Value:   "postgres://stargazer:stargazer@localhost:5432/stargazer?sslmode=disable",
+			Usage:   "Postgres database URL",
+			EnvVars: []string{"STARGAZER_PG_URL", "DATABASE_URL"},
 		},
 		&cli.StringFlag{
 			Name:    "log-level",
@@ -119,9 +90,7 @@ func main() {
 				}
 
 				return crawler.Start(config.Crawler{
-					Common: config.Common{
-						LogLevel: level,
-					},
+					Common:                          config.Common{LogLevel: level},
 					MgoURI:                          c.String("mgo-uri"),
 					GHToken:                         c.String("gh-token"),
 					UserExpirationDelay:             c.Int64("user-expiration-delay"),
@@ -130,14 +99,7 @@ func main() {
 					TaskRepositoryScanDelay:         c.Int64("task-repository-scan-delay"),
 					TaskRepositoryMaxStargazerPages: c.Int64("task-repository-max-stargazer-pages"),
 					TaskRepositoryExclusions:        c.StringSlice("task-repository-exclusions"),
-					Database: config.Database{
-						Host:     c.String("pg-host"),
-						Port:     c.Int64("pg-port"),
-						SSL:      !c.Bool("pg-disable-ssl"),
-						Name:     c.String("pg-database"),
-						User:     c.String("pg-user"),
-						Password: c.String("pg-password"),
-					},
+					DatabaseURL:                     c.String("pg-url"),
 				})
 			},
 		},
@@ -170,18 +132,9 @@ func main() {
 				}
 
 				return web.Start(config.Web{
-					Common: config.Common{
-						LogLevel: level,
-					},
-					Port: c.Int64("port"),
-					Database: config.Database{
-						Host:     c.String("pg-host"),
-						Port:     c.Int64("pg-port"),
-						SSL:      !c.Bool("pg-disable-ssl"),
-						Name:     c.String("pg-database"),
-						User:     c.String("pg-user"),
-						Password: c.String("pg-password"),
-					},
+					Common:          config.Common{LogLevel: level},
+					Port:            c.Int64("port"),
+					DatabaseURL:     c.String("pg-url"),
 					RegenerateDelay: c.Int64("regenerate-delay"),
 					MainRepository:  c.String("main-repository"),
 					MaxEntriesCount: c.Int64("max-entries-count"),

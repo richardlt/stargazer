@@ -31,7 +31,7 @@ func Start(cfg config.Crawler) error {
 		return err
 	}
 
-	pgClient, err := database.New(cfg.Database)
+	pgClient, err := database.New(cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}

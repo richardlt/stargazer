@@ -10,7 +10,7 @@ import (
 func Start(cfg config.Web) error {
 	logrus.SetLevel(cfg.LogLevel)
 
-	db, err := database.New(cfg.Database)
+	db, err := database.New(cfg.DatabaseURL)
 	if err != nil {
 		return err
 	}
@@ -21,7 +21,7 @@ func Start(cfg config.Web) error {
 		mainRepository:  cfg.MainRepository,
 		maxEntriesCount: cfg.MaxEntriesCount,
 	}
-	if err := s.initRouter(); err != nil {
+	if err := s.initRouter("./"); err != nil {
 		return err
 	}
 	defer s.Close()
