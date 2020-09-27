@@ -92,6 +92,11 @@
     </p>
     <script>setTimeout(function () { document.location.reload(false); }, 10000);</script>
     {{end}}
+    {{if and (eq .entry.Stats.CountStars 0) (eq .entry.Status "generated")}}
+    <p class="content">
+        No one starred this repository for now!
+    </p>
+    {{end}} 
     {{if .entry.Stats.CountStars}}
     <div class="align">
         <div class="graph">
@@ -112,6 +117,8 @@
             {{end}}
         </ul>
     </div>
+    {{end}}
+    {{if eq .entry.Status "generated"}}
     <p class="info">
         Stats generated at: {{.last_generated_at_string}}.<br />
         <br />
@@ -124,6 +131,8 @@
             href="https://github.com/{{.main_repository}}/issues/new" target="_blank"
             rel="noopener noreferrer">{{.main_repository}}</a>.
     </p>
+    {{end}}
+    {{if .entry.Stats.CountStars}}
     <script>
         window.onload = function () {
             var stats = JSON.parse("{{.stats_json}}");
