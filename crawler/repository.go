@@ -194,10 +194,11 @@ func execTaskRepositoryRoutine(pgClient *database.DB, mgoClient *databaseClient,
 		}
 		repoOwner := o["owner"].(map[string]interface{})
 		repoOwnerType := repoOwner["type"].(string)
+		repoPath := o["full_name"].(string)
 
 		if repoOwnerType == "Organization" {
 			logrus.Debugf("execTaskRepositoryRoutine: repository owner is an organization, checking contributors for %s", e.Repository)
-			contributors, err := ghClient.getRepositoryConributors(e.Repository)
+			contributors, err := ghClient.getRepositoryConributors(repoPath)
 			if err != nil || len(contributors) == 0 {
 				logrus.Debugf("execTaskRepositoryRoutine: repository contributors not found on GH %s", e.Repository)
 				if err := pgClient.Delete(e.Repository); err != nil {
@@ -234,7 +235,7 @@ func execTaskRepositoryRoutine(pgClient *database.DB, mgoClient *databaseClient,
 		e.Stats.CountStars = int64(o["stargazers_count"].(float64))
 
 		// Compute evolution stats
-		msPage, err := mgoClient.getRepoStarCountPerDaysAndPage(e.Repository)
+		msPage, err := mgoClient.getRepoStarCountPerDaysAndPage(repoPath)
 		if err != nil {
 			return err
 		}
@@ -257,7 +258,7 @@ func execTaskRepositoryRoutine(pgClient *database.DB, mgoClient *databaseClient,
 		}
 
 		// Compute count per days stats
-		ms, err := mgoClient.getRepoStarCountPerDays(e.Repository)
+		ms, err := mgoClient.getRepoStarCountPerDays(repoPath)
 		if err != nil {
 			return err
 		}
@@ -272,7 +273,7 @@ func execTaskRepositoryRoutine(pgClient *database.DB, mgoClient *databaseClient,
 		}
 
 		// Set last stargazers
-		ss, err := mgoClient.getLast10Stargazers(e.Repository)
+		ss, err := mgoClient.getLast10Stargazers(repoPath)
 		if err != nil {
 			return err
 		}

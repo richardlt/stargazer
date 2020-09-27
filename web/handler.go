@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -35,7 +36,7 @@ func (s *Server) repositoryPageHandler() http.HandlerFunc {
 			return
 		}
 
-		repoPath := organization + "/" + repository
+		repoPath := strings.ToLower(organization + "/" + repository)
 
 		e, err := s.db.Get(repoPath)
 		if err != nil && errors.Cause(err) != gorm.ErrRecordNotFound {

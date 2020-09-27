@@ -215,11 +215,7 @@ func (c databaseClient) existsOneOfRepositoryStargazer(repo string, logins ...st
 	defer cancel()
 
 	res, err := co.Aggregate(ctx, []bson.M{
-		{
-			"$match": bson.M{
-				"repository_path": repo,
-			},
-		},
+		{"$match": bson.M{"repository_path": repo}},
 		{
 			"$lookup": bson.M{
 				"from":         "users",
@@ -230,17 +226,51 @@ func (c databaseClient) existsOneOfRepositoryStargazer(repo string, logins ...st
 		},
 		{
 			"$project": bson.M{
-				"user": bson.M{
-					"$arrayElemAt": []interface{}{"$users", 0},
+				"_id":  "$_id",
+				"user": bson.M{"$arrayElemAt": []interface{}{"$users", 0}},
+			},
+		},
+		{
+			"$project": bson.M{
+				"_id":           "$_id",
+				"login":         "$user.login",
+				"organizations": "$user.organizations",
+			},
+		},
+		{
+			"$unwind": bson.M{
+				"path":                       "$organizations",
+				"preserveNullAndEmptyArrays": true,
+			},
+		},
+		{
+			"$project": bson.M{
+				"_id":   "$_id",
+				"login": bson.M{"$toLower": "$login"},
+				"organizations": bson.M{
+					"login": bson.M{"$toLower": "$organizations.login"},
 				},
+			},
+		},
+		{
+			"$group": bson.M{
+				"_id":   "$_id",
+				"login": bson.M{"$first": "$login"},
+				"organizations": bson.M{"$push": bson.M{"$cond": bson.M{
+					"if": bson.M{
+						"$ne": []interface{}{"$organizations.login", ""},
+					},
+					"then": "$organizations",
+					"else": "$null",
+				}}},
 			},
 		},
 		{
 			"$match": bson.M{
 				"$or": []bson.M{
-					{"user.login": bson.M{"$in": logins}},
+					{"login": bson.M{"$in": logins}},
 					{
-						"user.organizations": bson.M{
+						"organizations": bson.M{
 							"$elemMatch": bson.M{
 								"login": bson.M{"$in": logins},
 							},
