@@ -4,14 +4,14 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
-)
 
-type object map[string]interface{}
+	"github.com/richardlt/stargazer/crawler/github"
+)
 
 type repository struct {
 	ID   primitive.ObjectID `bson:"_id" json:"-"`
 	Path string             `bson:"path" json:"path"`
-	Data object             `bson:"data" json:"data"`
+	Data github.Repository  `bson:"data" json:"data"`
 }
 
 type stargazer struct {
@@ -20,15 +20,15 @@ type stargazer struct {
 	RepositoryPath string             `bson:"repository_path" json:"-"`
 	Page           int64              `bson:"page" json:"page"`
 	LastPage       bool               `bson:"last_page" json:"last_page"`
-	Data           object             `bson:"data" json:"data"`
+	Data           github.Stargazer   `bson:"data" json:"data"`
 }
 
 type user struct {
-	ID            primitive.ObjectID `bson:"_id" json:"-"`
-	Expire        time.Time          `bson:"expire" json:"expire"`
-	Login         string             `bson:"login" json:"login"`
-	Data          object             `bson:"data" json:"data"`
-	Organizations []object           `bson:"organizations" json:"organizations"`
+	ID            primitive.ObjectID    `bson:"_id" json:"-"`
+	Expire        time.Time             `bson:"expire" json:"expire"`
+	Login         string                `bson:"login" json:"login"`
+	Data          github.User           `bson:"data" json:"data"`
+	Organizations []github.Organization `bson:"organizations" json:"organizations"`
 }
 
 type measure struct {

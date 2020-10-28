@@ -10,6 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/richardlt/stargazer/config"
+	"github.com/richardlt/stargazer/crawler/github"
 	"github.com/richardlt/stargazer/database"
 )
 
@@ -25,9 +26,8 @@ func Start(cfg config.Crawler) error {
 		return errors.WithStack(err)
 	}
 
-	mgo := client.Database("stargazer")
-	mgoClient := &databaseClient{mgo}
-	if err := mgoClient.init(); err != nil {
+	mgoClient := NewMongoClient(client.Database("stargazer"))
+	if err := mgoClient.Init(); err != nil {
 		return err
 	}
 
@@ -37,7 +37,7 @@ func Start(cfg config.Crawler) error {
 	}
 	defer pgClient.Close()
 
-	ghClient := &githubClient{token: cfg.GHToken}
+	ghClient := github.NewClient(cfg.GHToken)
 
 	go func() {
 		logrus.Info("main: start main repository scanner")
@@ -53,7 +53,7 @@ func Start(cfg config.Crawler) error {
 	go func() {
 		logrus.Info("main: start task repository scanner")
 		for {
-			if err := execTaskRepositoryRoutine(pgClient, mgoClient, ghClient, cfg.MainRepository, cfg.TaskRepositoryMaxStargazerPages, cfg.MainRepository, cfg.TaskRepositoryExclusions); err != nil {
+			if err := execTaskRepositoriesRoutine(pgClient, mgoClient, ghClient, cfg); err != nil {
 				logrus.Errorf("%+v", err)
 			}
 			logrus.Infof("main: task repository scanner routine waiting %ds\n", cfg.TaskRepositoryScanDelay)
@@ -66,11 +66,11 @@ func Start(cfg config.Crawler) error {
 	for {
 		now := time.Now()
 		logrus.Infof("main: now is %s running since %s", now.UTC().String(), now.Sub(startDate).String())
-		logrus.Infof("main: GH request count is %d for current hour", ghClient.getRequestCount())
+		logrus.Infof("main: GH request count is %d for current hour", ghClient.GetRequestCount())
 
 		// reset GH request count if hour changed
 		if now.Hour() != lastDate.Hour() {
-			ghClient.resetRequestCount()
+			ghClient.ResetRequestCount()
 		}
 		lastDate = now
 		time.Sleep(time.Minute)

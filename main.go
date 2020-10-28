@@ -34,6 +34,12 @@ func main() {
 			Usage:   "Set the path for main repository.",
 			EnvVars: []string{"STARGAZER_MAIN_REPOSITORY"},
 		},
+		&cli.Int64Flag{
+			Name:    "task-repository-org-contributors-to-check",
+			Value:   10,
+			Usage:   "Set the count of organization contributors to includes when checking for start on main repository.",
+			EnvVars: []string{"STARGAZER_TASK_REPOSITORY_ORG_CONTRIBUTORS_TO_CHECK"},
+		},
 	}
 
 	app.Commands = []*cli.Command{
@@ -90,16 +96,19 @@ func main() {
 				}
 
 				return crawler.Start(config.Crawler{
-					Common:                          config.Common{LogLevel: level},
+					Common: config.Common{
+						LogLevel:                             level,
+						DatabaseURL:                          c.String("pg-url"),
+						MainRepository:                       c.String("main-repository"),
+						TaskRepositoryOrgContributorsToCheck: c.Int64("task-repository-org-contributors-to-check"),
+					},
 					MgoURI:                          c.String("mgo-uri"),
 					GHToken:                         c.String("gh-token"),
 					UserExpirationDelay:             c.Int64("user-expiration-delay"),
-					MainRepository:                  c.String("main-repository"),
 					MainRepositoryScanDelay:         c.Int64("main-repository-scan-delay"),
 					TaskRepositoryScanDelay:         c.Int64("task-repository-scan-delay"),
 					TaskRepositoryMaxStargazerPages: c.Int64("task-repository-max-stargazer-pages"),
 					TaskRepositoryExclusions:        c.StringSlice("task-repository-exclusions"),
-					DatabaseURL:                     c.String("pg-url"),
 				})
 			},
 		},
@@ -132,11 +141,14 @@ func main() {
 				}
 
 				return web.Start(config.Web{
-					Common:          config.Common{LogLevel: level},
+					Common: config.Common{
+						LogLevel:                             level,
+						DatabaseURL:                          c.String("pg-url"),
+						MainRepository:                       c.String("main-repository"),
+						TaskRepositoryOrgContributorsToCheck: c.Int64("task-repository-org-contributors-to-check"),
+					},
 					Port:            c.Int64("port"),
-					DatabaseURL:     c.String("pg-url"),
 					RegenerateDelay: c.Int64("regenerate-delay"),
-					MainRepository:  c.String("main-repository"),
 					MaxEntriesCount: c.Int64("max-entries-count"),
 				})
 			},

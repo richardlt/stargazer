@@ -11,11 +11,15 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-type databaseClient struct {
+func NewMongoClient(db *mongo.Database) *DatabaseClient {
+	return &DatabaseClient{db}
+}
+
+type DatabaseClient struct {
 	db *mongo.Database
 }
 
-func (c databaseClient) init() error {
+func (c *DatabaseClient) Init() error {
 	coStargazers := c.db.Collection("stargazers")
 	coUsers := c.db.Collection("users")
 
@@ -40,7 +44,7 @@ func (c databaseClient) init() error {
 	return nil
 }
 
-func (c databaseClient) getRepository(path string) (*repository, error) {
+func (c DatabaseClient) getRepository(path string) (*repository, error) {
 	co := c.db.Collection("repositories")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -57,7 +61,7 @@ func (c databaseClient) getRepository(path string) (*repository, error) {
 	return &r, nil
 }
 
-func (c databaseClient) insertRepository(r *repository) error {
+func (c DatabaseClient) insertRepository(r *repository) error {
 	co := c.db.Collection("repositories")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -68,7 +72,7 @@ func (c databaseClient) insertRepository(r *repository) error {
 	return errors.WithStack(err)
 }
 
-func (c databaseClient) updateRepository(r *repository) error {
+func (c DatabaseClient) updateRepository(r *repository) error {
 	co := c.db.Collection("repositories")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -78,17 +82,17 @@ func (c databaseClient) updateRepository(r *repository) error {
 	return errors.WithStack(err)
 }
 
-func (c databaseClient) countStargazers(repositoryID primitive.ObjectID) (int, error) {
+func (c DatabaseClient) countStargazers(repositoryID primitive.ObjectID) (int64, error) {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	count, err := co.CountDocuments(ctx, bson.M{"_repository_id": repositoryID})
-	return int(count), errors.WithStack(err)
+	return count, errors.WithStack(err)
 }
 
-func (c databaseClient) getStargazers(repo string) ([]stargazer, error) {
+func (c DatabaseClient) getStargazers(repo string) ([]stargazer, error) {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -113,7 +117,7 @@ func (c databaseClient) getStargazers(repo string) ([]stargazer, error) {
 	return ss, nil
 }
 
-func (c databaseClient) getLast10Stargazers(repo string) ([]stargazer, error) {
+func (c DatabaseClient) getLast10Stargazers(repo string) ([]stargazer, error) {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -144,7 +148,7 @@ func (c databaseClient) getLast10Stargazers(repo string) ([]stargazer, error) {
 	return ss, nil
 }
 
-func (c databaseClient) deleteStargazers(repositoryID primitive.ObjectID) error {
+func (c DatabaseClient) deleteStargazers(repositoryID primitive.ObjectID) error {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -154,7 +158,7 @@ func (c databaseClient) deleteStargazers(repositoryID primitive.ObjectID) error 
 	return errors.WithStack(err)
 }
 
-func (c databaseClient) insertStargazers(ss []stargazer) error {
+func (c DatabaseClient) insertStargazers(ss []stargazer) error {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -170,7 +174,7 @@ func (c databaseClient) insertStargazers(ss []stargazer) error {
 	return nil
 }
 
-func (c databaseClient) getUser(login string) (*user, error) {
+func (c DatabaseClient) getUser(login string) (*user, error) {
 	co := c.db.Collection("users")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -187,7 +191,7 @@ func (c databaseClient) getUser(login string) (*user, error) {
 	return &u, nil
 }
 
-func (c databaseClient) insertUser(u *user) error {
+func (c DatabaseClient) insertUser(u *user) error {
 	co := c.db.Collection("users")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -198,7 +202,7 @@ func (c databaseClient) insertUser(u *user) error {
 	return errors.WithStack(err)
 }
 
-func (c databaseClient) updateUser(u *user) error {
+func (c DatabaseClient) updateUser(u *user) error {
 	co := c.db.Collection("users")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -208,7 +212,7 @@ func (c databaseClient) updateUser(u *user) error {
 	return errors.WithStack(err)
 }
 
-func (c databaseClient) existsOneOfRepositoryStargazer(repo string, logins ...string) (bool, error) {
+func (c DatabaseClient) existsOneOfRepositoryStargazer(repo string, logins ...string) (bool, error) {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -291,7 +295,7 @@ func (c databaseClient) existsOneOfRepositoryStargazer(repo string, logins ...st
 	return len(all) > 0, nil
 }
 
-func (c databaseClient) getRepoStarCountPerDaysAndPage(repo string) ([]measure, error) {
+func (c DatabaseClient) getRepoStarCountPerDaysAndPage(repo string) ([]measure, error) {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -304,17 +308,11 @@ func (c databaseClient) getRepoStarCountPerDaysAndPage(repo string) ([]measure, 
 		{
 			"$project": bson.M{
 				"page":       "$page",
-				"starred_at": bson.M{"$dateFromString": bson.M{"dateString": "$data.starred_at"}},
-			},
-		},
-		{
-			"$project": bson.M{
-				"page":       "$page",
-				"starred_at": "$starred_at",
-				"year":       bson.M{"$toString": bson.M{"$year": "$starred_at"}},
-				"month":      bson.M{"$toString": bson.M{"$month": "$starred_at"}},
-				"day":        bson.M{"$toString": bson.M{"$dayOfMonth": "$starred_at"}},
-				"hour":       bson.M{"$toString": bson.M{"$hour": "$starred_at"}},
+				"starred_at": "$data.starred_at",
+				"year":       bson.M{"$toString": bson.M{"$year": "$data.starred_at"}},
+				"month":      bson.M{"$toString": bson.M{"$month": "$data.starred_at"}},
+				"day":        bson.M{"$toString": bson.M{"$dayOfMonth": "$data.starred_at"}},
+				"hour":       bson.M{"$toString": bson.M{"$hour": "$data.starred_at"}},
 			},
 		},
 		{
@@ -353,7 +351,7 @@ func (c databaseClient) getRepoStarCountPerDaysAndPage(repo string) ([]measure, 
 	return ms, nil
 }
 
-func (c databaseClient) getRepoStarCountPerDays(repo string) ([]measure, error) {
+func (c DatabaseClient) getRepoStarCountPerDays(repo string) ([]measure, error) {
 	co := c.db.Collection("stargazers")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -365,16 +363,11 @@ func (c databaseClient) getRepoStarCountPerDays(repo string) ([]measure, error) 
 		},
 		{
 			"$project": bson.M{
-				"starred_at": bson.M{"$dateFromString": bson.M{"dateString": "$data.starred_at"}},
-			},
-		},
-		{
-			"$project": bson.M{
-				"starred_at": "$starred_at",
-				"year":       bson.M{"$toString": bson.M{"$year": "$starred_at"}},
-				"month":      bson.M{"$toString": bson.M{"$month": "$starred_at"}},
-				"day":        bson.M{"$toString": bson.M{"$dayOfMonth": "$starred_at"}},
-				"hour":       bson.M{"$toString": bson.M{"$hour": "$starred_at"}},
+				"starred_at": "$data.starred_at",
+				"year":       bson.M{"$toString": bson.M{"$year": "$data.starred_at"}},
+				"month":      bson.M{"$toString": bson.M{"$month": "$data.starred_at"}},
+				"day":        bson.M{"$toString": bson.M{"$dayOfMonth": "$data.starred_at"}},
+				"hour":       bson.M{"$toString": bson.M{"$hour": "$data.starred_at"}},
 			},
 		},
 		{
