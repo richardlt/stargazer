@@ -85,7 +85,7 @@ func CheckTaskRepositoryRoutine(pgClient *database.DB, mgoClient *DatabaseClient
 			return true, errors.Errorf("repository contributors not found on GH %s", e.Repository)
 		}
 		logins := make([]string, len(contributors))
-		for i := 0; i < int(cfg.TaskRepositoryOrgContributorsToCheck); i++ {
+		for i := 0; i < int(cfg.TaskRepositoryOrgContributorsToCheck) && i < len(contributors); i++ {
 			logins[i] = contributors[i].Login
 		}
 
